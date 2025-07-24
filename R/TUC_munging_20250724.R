@@ -23,3 +23,21 @@ for (file_name in miniDOT_bot_dir) {
   # Append the temporary data frame to the combined data frame
   combined_df <- rbind(combined_df, temp_df)
 }
+
+
+combined_corrected = combined_df %>% 
+  mutate(`  DO (mg/l)` = as.numeric(`  DO (mg/l)`), 
+         `  T (deg C)` = as.numeric(`  T (deg C)`), 
+         date = as.POSIXct(origin = "1970-01-01)) %>% 
+  filter(`  DO (mg/l)` < 1.00)
+
+
+
+# plot
+ggplot(combined_corrected, aes(`Time (sec)`, `  DO (mg/l)`)) + 
+         geom_path()
+
+
+
+
+
