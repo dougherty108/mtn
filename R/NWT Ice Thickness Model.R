@@ -11,6 +11,17 @@
 # hopefully can apply back into the 80s after it's been fully adapted
 
 
+# data to download
+# Ice thickness and duration dataset
+# Air Temperature
+# SW data
+# LW Data
+# Air Pressure (might be tough due to elevation differences)
+# Relative Humidity (for evap)
+# Wind Speed 
+# Albedo: Could be a dummy variable to start. We'll see if it's important, MLL collects
+# ice surafce albedo during sampling events
+
 
 # Load necessary libraries
 library(tidyverse)
