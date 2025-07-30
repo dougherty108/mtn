@@ -78,8 +78,12 @@ ggplot(TUC_DO, aes(date, `  DO (mg/l)`, color = month)) +
   facet_wrap(vars(`depth from bottom`), scales = "free") + 
   theme_bw() + 
   ggtitle("DO (mg/L), Turkey Creek Lake 2024-2025 by month")
+  
+# what about YSI data? 
+setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data")
 
-
+YSI_deploy <- read_delim("Sensors/YSI Pro DSS/TUC/raw/TurkeyCreek_Lake_20240716.csv", 
+                         delim = ",", skip = 4)
 
 
 
