@@ -29,30 +29,16 @@ library(lubridate)
 library(progress)
 library(suncalc) # for sun angle estimates
 
-
+setwd("~/Library/CloudStorage/OneDrive-UCB-O365/Documents/R-Repositories/mtn")
 
 ###################### Load Time Series Data by Station ######################
 # met station data can be found at the McMurdo Long Term Ecological Research website or on the Environmental Data Initiative
-BOYM <- read_csv("~/Google Drive/My Drive/MCMLTER_Met/met stations/mcmlter-clim_boym_15min-20250205.csv") |> 
-  mutate(date_time = ymd_hms(date_time)) |> 
-  filter(date_time > '2016-12-21 00:00:00')
-
-HOEM <- read_csv("~/Google Drive/My Drive/MCMLTER_Met/met stations/mcmlter-clim_hoem_15min-20250205.csv") |> 
-  mutate(date_time = ymd_hms(date_time)) |> 
-  filter(date_time > '2016-12-21 00:00:00') |> 
-  mutate(airtemp_3m_K = airtemp_3m_degc + 273.15)
-
-COHM <- read_csv("~/Google Drive/My Drive/MCMLTER_Met/met stations/mcmlter-clim_cohm_15min-20250205.csv") |> 
-  mutate(date_time = ymd_hms(date_time)) |> 
-  filter(date_time > '2016-12-21 00:00:00')
-
-TARM <- read_csv("~/Google Drive/My Drive/MCMLTER_Met/met stations/mcmlter-clim_tarm_15min-20250205.csv") |> 
-  mutate(date_time = ymd_hms(date_time)) |> 
-  filter(date_time > '2016-12-21 00:00:00') |> 
-  mutate(airtemp_3m_K = airtemp_3m_degc + 273.15)
+# data from 2009 onward
+SDL <-  read_csv("data/sdlcr23x-cr1000.hourly.ml.data.csv") %>% 
+  mutate(date_time = date_time_start)
 
 ###################### Define Parameters ######################
-L_initial <- 3.88       # Initial ice thickness (m) Ice thickness at 12/17/2016 ice to ice
+#L_initial <- 3.88       # Initial ice thickness (m) Ice thickness at 12/17/2016 ice to ice
 dx <- 0.10              # Spatial step size (m)
 nx = L_initial/dx       # Number of spatial steps
 dt <-  1/24             # Time step for stability (in days)
@@ -85,31 +71,22 @@ if (r > 0.5) stop("r > 0.5, solution may be unstable. Reduce dt or dx.")
 
 ###################### Separate data out into input parameters ######################
 #preemptively set working directory back 
-setwd("~/Documents/R-Repositories/TVLakes_Sediment")
-
-# select air temperature data from Lake Bonney Met, and gapfill holes with Lake Hoare
-# this step is mainly to gather a time series for gap filling other portions of the script. Air temperature data is sourced 
-# the East Lake Bonney Permanent Monitoring Station (ELBBB)
 
 ###################### AIR TEMPERATURE DATA ######################
 ## load air temperature data from East Lake Bonney Lake Monitoring Station (unpublished data)
 
-#time_model = start_time + seq(0, by = dt* 86400, length.out = nt)  # Convert dt from days to seconds
-start_time <- min(BOYM$date_time)
+start_time <- min(SDL$date_time_start)
 
 # Generate model time steps (POSIXct format)
 time_model <- start_time + seq(0, by = dt * 86400, length.out = nt)  # Convert dt from days to seconds
 
+# can gap-fill air temp gaps with the HMP RH data
 
-air_temperature <- read_csv("Data/air_temp_ELBBB.csv") |> 
-  mutate(date_time = mdy_hm(date_time), 
-         airtemp_3m_K = surface_temp_C + 273.15)
-
-# load air temperature data from the West Lake Bonney Lake Monitoring Station, to fill gaps in the ELBBB record
-wlbbb_airtemp <- read_csv('Data/air_temp_WLBBB.csv') |> 
-  mutate(date_time = mdy_hm(date_time), 
-         airtemp_3m_K = surface_temp_C + 273.15) |> 
-  filter(date_time < "2023-11-01 00:00:00")
+air_temperature <- SDL |> 
+  select(airtemp_avg, date_time, flag_airtemp_avg) %>% 
+  mutate(
+    #date_time = mdy_hms(date_time), 
+         airtemp_3m_K = airtemp_avg + 273.15)
 
 # Define the full sequence of timestamps at 15-minute intervals
 full_timestamps <- data.frame(date_time = seq(from = min(air_temperature$date_time), 
@@ -117,35 +94,34 @@ full_timestamps <- data.frame(date_time = seq(from = min(air_temperature$date_ti
                                               by = "15 min"))
 
 # Merge with original data and fill missing values with NA
-air_temp_gaps <- full_timestamps |> 
-  left_join(air_temperature, by = "date_time")
+#air_temp_gaps <- full_timestamps |> 
+ # left_join(air_temperature, by = "date_time")
 
 # fill gaps in record at East Lake Bonney with data from West Lake Bonney
 air_temperature <- air_temp_gaps |> 
   mutate(airtemp_3m_K = ifelse(is.na(airtemp_3m_K), wlbbb_airtemp$airtemp_3m_K, airtemp_3m_K))
 
 ###################### SHORTWAVE RADIATION DATA ######################
-# select incoming shortwave radiation data from Lake Bonney Met and fill gaps. Gaps are first filled with data from the 
-# next nearest station (Taylor Glacier Met), but failing that, an empirical equation defined in Obryk et al, 2016 is used. 
-shortwave_radiation_initial <- BOYM |> 
-  dplyr::select(metlocid, date_time, swradin_wm2) |> 
-  mutate(swradin_wm2 = ifelse(is.na(swradin_wm2), TARM$swradin_wm2, swradin_wm2)) # replace empty shortwave data with TARM, nearest met station
+# need to find a way to fill gaps
+shortwave_radiation_initial <- SDL |> 
+  dplyr::select(local_site, date_time, solrad_avg, flag_solrad_avg) #|> 
+  #mutate(swradin_wm2 = ifelse(is.na(swradin_wm2), TARM$swradin_wm2, swradin_wm2)) # replace empty shortwave data with TARM, nearest met station
 
 # create an artificial shortwave object
 # Coordinates of East Lobe Bonney Blue Box
-latitude <- -77.13449
-longitude <- 162.449716
+#latitude <- -77.13449
+#longitude <- 162.449716
 
-artificial_shortwave <- tibble(
-  date_time = time_model, 
-  zenith = 90 - getSunlightPosition(time_model, lat = latitude, lon = longitude)$altitude, #convert to zenith by subtracting the altitude from 90 degrees. 
-  sw = S*cos(zenith)*3.0) # multiplied by 3 to make data better match historical mean.
+#artificial_shortwave <- tibble(
+#  date_time = time_model, 
+#  zenith = 90 - getSunlightPosition(time_model, lat = latitude, lon = longitude)$altitude, #convert to zenith by subtracting the altitude from 90 degrees. 
+#  sw = S*cos(zenith)*3.0) # multiplied by 3 to make data better match historical mean.
 
-shortwave_radiation <- shortwave_radiation_initial |> 
-  left_join(artificial_shortwave, by = "date_time") |>    # Join on date_time
-  mutate(swradin_wm2 = ifelse(is.na(swradin_wm2), sw, swradin_wm2)) |>   # Fill missing values
-  dplyr::select(-sw)  |> # Remove extra column
-  filter(swradin_wm2 > 0)
+#shortwave_radiation <- shortwave_radiation_initial |> 
+#  left_join(artificial_shortwave, by = "date_time") |>    # Join on date_time
+#  mutate(swradin_wm2 = ifelse(is.na(swradin_wm2), sw, swradin_wm2)) |>   # Fill missing values
+#  dplyr::select(-sw)  |> # Remove extra column
+#  filter(swradin_wm2 > 0)
 
 
 ###################### OUTGOING (UPWELLING) LONGWAVE RADIATION DATA ######################
