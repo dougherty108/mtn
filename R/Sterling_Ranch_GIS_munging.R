@@ -3,27 +3,60 @@
 library(tidyverse)
 library(sf)
 library(terra)
+library(ggspatial)
+library(maptiles)
 
 gdb_path <- "data/MHFD_SR_Request.gdb"
 
 st_layers(gdb_path)
 
-#inlet
-inlet <- st_read(dsn = gdb_path, layer = "INLET")
+inlet = "INLET"
+junction = "JUNCTION"
+outfall = "OUTFALL"
+conduit = "CONDUIT"
+pond = "POND"
+open_channel = "OPEN_CHANNEL"
 
-glimpse(inlet)
+inlet_sf <- st_read(dsn = gdb_path, layer = inlet)
+junction_sf <- st_read(dsn = gdb_path, layer = junction)
+outfall_sf <- st_read(dsn = gdb_path, layer = outfall)
+conduit_sf <- st_read(dsn = gdb_path, layer = conduit)
+pond_sf <- st_read(dsn = gdb_path, layer = pond)
+open_channel_sf <- st_read(dsn = gdb_path, layer = open_channel)
 
-plot(inlet["STORMWATER_ID"])
+#load sub-type attributes
+glimpse(inlet_sf)
+glimpse(junction_sf)
+glimpse(outfall_sf)
+glimpse(conduit_sf)
+glimpse(pond_sf)
+glimpse(open_channel_sf)
 
+# Transform your data to Web Mercator (needed for tiles)
+inlet_webmerc <- st_transform(inlet_sf, 3857)
+junction_webmerc <- st_transform(junction_sf, 3857)
+outfall_webmerc <- st_transform(outfall_sf, 3857)
+conduit_webmerc <- st_transform(conduit_sf, 3857)
+pond_webmerc <- st_transform(pond_sf, 3857)
+open_channel_webmerc <- st_transform(open_channel_sf, 3857)
 
-ggplot(data = inlet) +
-  geom_sf(aes(color = Shape)) +
+# Get the basemap (you can change provider, e.g., "CartoDB.Positron", "OpenStreetMap", etc.)
+basemap <- get_tiles(conduit_webmerc, provider = "CartoDB.Positron", crop = TRUE)
+
+ggplot() +
+  layer_spatial(basemap) +  # Basemap layer
+  geom_sf(data = open_channel_webmerc, 
+          #aes(#fill = OPEN_CHANNEL_TYPE), 
+          size = 0.5) +  # Your data
+  geom_sf(data = pond_webmerc, 
+          aes(fill = COLOR_RANK), 
+          size = 0.5) +  
+  geom_sf(data = inlet_webmerc, 
+          aes(color = ), 
+          size = 0.5) + 
+  annotation_scale(location = "bl") +
+  annotation_north_arrow(location = "tl", which_north = "true") +
   theme_minimal() +
-  labs(title = "test", color = "SHAPE")
+  labs(title = "Sterling Ranch", color = "Legend Title")
 
-# pond
-pond = st_read(dsn = gdb_path, layer = "POND")
-
-glimpse(pond)
-
-plot(pond["COLOR_RANK"])
+plot(inlet_webmerc["Shape"])
