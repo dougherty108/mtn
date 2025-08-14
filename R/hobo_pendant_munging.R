@@ -24,24 +24,21 @@ data_list <- list()
 # Loop through each file
 for (file in files) {
   
-  # Extract just the filename
-  filename <- basename(file)
-  
-  # Extract depth (e.g., 12.0) from filename using regex
-  # Matches "_12.0m_" or "_5.5m_" in the filename
-  length_match <- str_match(filename, "_(\\d+\\.?\\d*)m_")[, 2]
+  # Extract depth (e.g., 12.0) from the full file path using regex
+  # Matches "_12.0m_" or "_5.5m_" in the file path
+  length_match <- str_match(file, "_(\\d+\\.?\\d*)m_")[, 2]
   
   if (!is.na(length_match)) {
-    # Read the Excel or csv file
-    data <- read_csv(file)
+    # Read the CSV file (assuming all are CSVs; adjust if Excel support is needed)
+    data <- readr::read_csv(file)
     
     # Add a new column with the depth info (as numeric)
     data$depth_m <- as.numeric(length_match)
     
-    # Add this data frame to the list
+    # Add this data frame to the list, optionally using depth as the name
     data_list[[length_match]] <- data
   } else {
-    warning(paste("No length found in filename:", filename))
+    warning(paste("No length found in filename:", file))
   }
 }
 
@@ -49,8 +46,8 @@ for (file in files) {
 output = bind_rows(data_list) %>% 
   mutate(Temp_C = coalesce(`Temperature (°C)`, `Temperature   (°C)`)) %>%
   mutate(lux = coalesce(`Light (lux)`, `Light   (lux)`)) %>%# only use this step if date columns are wonky
-  filter(`Temperature   (°C)` < 20) %>% 
-  mutate(`Date-Time (MDT)` = mdy_hms(`Date-Time (MDT)`))
+  mutate(`Date-Time (MDT)` = mdy_hms(`Date-Time (MDT)`)) %>% 
+  filter(`Date-Time (MDT)` > "2024-09-07 00:00:00")
 
 # check structure of output to make sure columns are in correct format
 str(output)
@@ -68,7 +65,7 @@ ggplot(output, aes(`Date-Time (MDT)`, `Temp_C`)) +
   geom_line(aes(color = as.factor(depth_m))) + 
   geom_vline(data = end_times, aes(xintercept = as.numeric(end_time)), 
              linetype = "dashed", color = "black") +
-  ggtitle("Sky Pendants") + 
+  ggtitle("Upper Four Mile Pendants") + 
   scale_color_viridis_d(option = "D", name = "Depth from Bottom (m)") + 
   theme_bw()
 
