@@ -13,10 +13,10 @@ library(stringr) # Required for str_match
 setwd("~/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/HOBO")
 
 # Define the folder containing the specific site's files
-folder_path <- "TUC"
+folder_path <- "UFM/raw"
 
 # List all files in the subfolder
-files <- list.files(folder_path, full.names = TRUE)
+files <- list.files(folder_path, full.names = TRUE, pattern = ".csv")
 
 # Initialize empty list to store each file's data
 data_list <- list()
@@ -32,8 +32,8 @@ for (file in files) {
   length_match <- str_match(filename, "_(\\d+\\.?\\d*)m_")[, 2]
   
   if (!is.na(length_match)) {
-    # Read the Excel file
-    data <- read_excel(file)
+    # Read the Excel or csv file
+    data <- read_csv(file)
     
     # Add a new column with the depth info (as numeric)
     data$depth_m <- as.numeric(length_match)
@@ -46,6 +46,31 @@ for (file in files) {
 }
 
 #convert list output to dataframe
-output = bind_rows(data_list)
+output = bind_rows(data_list) %>% 
+  mutate(Temp_C = coalesce(`Temperature (°C)`, `Temperature   (°C)`)) %>%
+  mutate(lux = coalesce(`Light (lux)`, `Light   (lux)`)) %>%# only use this step if date columns are wonky
+  filter(`Temperature   (°C)` < 20) %>% 
+  mutate(`Date-Time (MDT)` = mdy_hms(`Date-Time (MDT)`))
 
-# plot output
+# check structure of output to make sure columns are in correct format
+str(output)
+
+# make any req corrections (none needed here)
+
+
+# Get end times for each depth group
+end_times <- output %>%
+  group_by(depth_m) %>%
+  summarize(end_time = max(`Date-Time (MDT)`), .groups = "drop")
+
+# Plot
+ggplot(output, aes(`Date-Time (MDT)`, `Temp_C`)) + 
+  geom_line(aes(color = as.factor(depth_m))) + 
+  geom_vline(data = end_times, aes(xintercept = as.numeric(end_time)), 
+             linetype = "dashed", color = "black") +
+  ggtitle("Sky Pendants") + 
+  scale_color_viridis_d(option = "D", name = "Depth from Bottom (m)") + 
+  theme_bw()
+
+
+
