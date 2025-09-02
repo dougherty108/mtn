@@ -3,7 +3,7 @@
 # load packages
 library(tidyverse)
 
-setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/TUC_0.5_BOT/")
+setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/FER_5_TOP/")
 # point R to the directory where the bottom logger files are contained
 miniDOT_bot_dir = list.files()
 
@@ -22,12 +22,12 @@ combined_bottom = combined_bot %>%
          date = as.POSIXct(origin = "1970-01-01", x = `Time (sec)`))
 
 # set wd to the top sensor
-setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/TUC_13.5_BOT/")
+setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/FER_0.5_TOP/")
 # point R to the directory where the bottom logger files are contained
 miniDOT_top_dir = list.files()
 
 combined_surf = data.frame()
-# bottom sensor
+#top sensor
 for (file_name in miniDOT_top_dir) {
   # Read the current file into a temporary data frame
   temp_df <- read_delim(file_name, delim = ",", skip = 2) 
@@ -42,11 +42,11 @@ combined_surface = combined_surf %>%
          date = as.POSIXct(origin = "1970-01-01", x = `Time (sec)`))
 
 combined_bottom = combined_bottom %>% 
-  mutate(`depth from bottom` = "0.5") %>% 
-  filter(`  DO (mg/l)` < 0.20)
+  mutate(`depth from top` = "5.0") #%>% 
+  #filter(`  DO (mg/l)` < 0.20)
 
 combined_surface = combined_surface %>% 
-  mutate(`depth from bottom` = "13.5")
+  mutate(`depth from top` = "0.5")
 
 # how complete is the data between the two sensors? 
 print(nrow(combined_bottom))
@@ -57,19 +57,19 @@ print(nrow(combined_bottom) - nrow(combined_surface))
 
 combined_df = rbind(combined_bottom, combined_surface)
 
-TUC_DO = combined_df %>% 
-  filter(date > "2024-07-18" & date < "2025-07-15") %>% 
+DO = combined_df %>% 
+  filter(date < "2024-07-25") %>% 
   mutate(month = as.character(month(date)))
 
 
 
 # plot
-ggplot(TUC_DO, aes(date, `  DO (mg/l)`)) + 
+ggplot(DO, aes(date, `  DO (mg/l)`, color =  `depth from top`)) + 
          geom_point(shape = 21, size = 2) + 
   geom_jitter() +
-  facet_wrap(vars(`depth from bottom`), scales = "free") + 
+  scale_color_viridis_d(option = "D", name = "Depth from Top (m)") + 
   theme_bw() + 
-  ggtitle("DO (mg/L), Turkey Creek Lake 2024-2025")
+  ggtitle("DO (mg/L), Upper Four Mile Lake 2024-2025")
 
 # plot by month
 ggplot(TUC_DO, aes(date, `  DO (mg/l)`, color = month)) + 
