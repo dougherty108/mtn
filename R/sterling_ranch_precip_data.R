@@ -18,7 +18,8 @@ total_flow = read_csv("data/MHFD_SterlingGulch/aug25/aem_Sterling_Gulch_10236_4_
 water_temp = read_csv("data/MHFD_SterlingGulch/aug25/aem_Sterling_Gulch_10236_6_Water_Temperature_9.csv") %>% 
   mutate(measurement_type = "water temperature")
 
-hydro = rbind(precip_accum, rain_increment, total_flow, water_temp)
+hydro = rbind(precip_accum, rain_increment, total_flow, water_temp) %>% 
+  filter(Reading > "2025-08-27 12:00:00" & Reading < "2025-08-28 12:00:00")
 
 # plot data in one plot
 ggplot(hydro, aes(Reading, Value)) + 
@@ -110,3 +111,12 @@ ggplot(temp_events, aes(Reading, Value)) +
   ggtitle("Temp Events") + 
   xlab("C") + 
   theme_light()
+
+
+
+# notes from meeting: 
+# rainmaker package from USGS, calculates different storm characteristics
+# correctly sum rain increment data and compare to precip accumulation
+# contact MHFD if the data looks funky between the two sensors
+
+

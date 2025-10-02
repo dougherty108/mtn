@@ -3,7 +3,7 @@
 # load packages
 library(tidyverse)
 
-setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/FER_5_TOP/")
+setwd("/Users/chdo4929/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data/Sensors/miniDOT/SKY_/")
 # point R to the directory where the bottom logger files are contained
 miniDOT_bot_dir = list.files()
 
