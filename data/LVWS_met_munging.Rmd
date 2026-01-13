@@ -1,0 +1,82 @@
+---
+title: "LVWS_met_munging"
+output: html_document
+---
+
+```{r}
+#
+library(here)
+library(tidyverse)
+
+# load project root
+here()
+
+```
+
+```{r}
+# point to data directory in OneDrive to get at the met data, update if changes
+data_path = "~/Library/CloudStorage/OneDrive-SharedLibraries-UCB-O365/Mountain limnology lab - Data"
+
+# load in all the met data that is available 1992-2019
+clim = read_csv(paste0(data_path, "/LVWS/09_meteorology/WY1992to2019_LochVale_Climate.csv")) |> 
+  mutate(date_time = mdy_hm(date_time))
+```
+
+Air Temperature
+```{r}
+ggplot(clim, aes(date_time, T_air)) +
+  geom_path(lineend = "square") + 
+  theme_bw(base_size = 18)
+```
+
+Relative Humidity
+```{r}
+ggplot(clim, aes(date_time, RH)) + 
+  geom_path() + 
+  theme_bw(base_size = 18)
+```
+
+Wind Speed
+```{r}
+ggplot(clim, aes(date_time, WSpd)) + 
+  geom_point(shape = 21) + 
+  theme_bw(base_size = 18)
+```
+
+
+Albedo plot has made outliers
+```{r}
+clim |> 
+  pivot_longer(cols = c(SWin, SWout), names_to = "SW", values_to = "value") |> 
+  ggplot() + 
+  geom_path(aes(date_time, value, color = SW)) + 
+  scale_color_brewer(palette = "Set1") + 
+  ggtitle("LWVS Shortwave") + 
+  theme_bw(base_size = 18) 
+
+ggplot(clim, aes(date_time, y = (SWout / SWin))) + 
+  geom_point() + 
+  ggtitle("LVWS Albedo") + 
+  theme_bw(base_size = 18)
+```
+
+Longwave Radiation
+```{r}
+clim |> 
+  pivot_longer(cols = c(LWin, LWout), names_to = "LW", values_to = "value") |> 
+  ggplot() + 
+  geom_point(aes(date_time, value, color = LW), shape = 21) + 
+  scale_color_brewer(palette = "Set1") + 
+  ggtitle("LWVS Longwave") + 
+  theme_bw(base_size = 18) 
+  
+```
+
+Snow Depth
+```{r}
+ggplot(clim, aes(date_time, Snow_depth)) + 
+  geom_path() + 
+  labs() + 
+  theme_bw(base_size = 20) 
+```
+
